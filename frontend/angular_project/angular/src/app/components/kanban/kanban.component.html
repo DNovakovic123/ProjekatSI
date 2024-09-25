@@ -1,0 +1,120 @@
+<html class="dark:bg-gray-800 h-screen">
+<div class="kanban-page dark:bg-gray-800">
+
+    <div class="grid-container h-max dark:bg-gray-800 md:ml-12 sm:ml-12 lg:ml-0" >
+        <div class="btn-group dark:bg-gray-700 shadow-custom3 rounded-md xl:ml-12 lg:ml-12">
+            <div class="centered-navigation"><app-urlnavigation></app-urlnavigation></div>
+            <div class="flex max-h-6  items-start mt-1  text-gray-600 self-center  justify-end xsm:justify-center ms-baseline dark:text-white">
+                <div class="flex mb-4 ml-4 px-2 ">
+                  <div class="w-52 min-w-52">
+                    <span class="font-medium text-sm mr-2 ">{{ 'startDate' | translate }}:</span>
+                    <img
+                      src="../../../assets/icons/calendar_icon.svg"
+                      class="w-4 h-4 mr-1"
+                    />
+                    <span *ngIf="ProjectInfo != undefined" class="text-sm">{{ProjectInfo.startDate | date:'MM/dd/yyyy'}}</span>
+                  </div>
+              </div>
+          </div>
+          <div class="flex max-h-6 mt-1  items-start self-center  text-gray-600  justify-center items-baseline dark:text-white">
+              <div class="flex mb-4 ml-4 px-2">
+              <div class="w-52 min-w-52">
+                <span class="font-medium text-sm mr-2 " >{{ 'endDate' | translate }}:</span>
+                <img
+                  src="../../../assets/icons/calendar_icon.svg"
+                  class="w-4 h-4 mr-1 " 
+                />
+                <span *ngIf="ProjectInfo != undefined" class="text-sm">{{ProjectInfo.endDate | date:'MM/dd/yyyy'}}</span>
+             
+            
+              </div>
+            </div>
+            
+          </div>
+            <div class="other-elements xsm:justify-center">
+                
+                <!-- <button class="filter-button" (click)="toggleFilters()">Filter by status</button> -->
+                <button class="add-column-button h-screen dark:text-white xsm:text-xs" (click)="toggleFilters()"><img style="width: 23px;height: 23px;" src="../../../assets/icons/filter_icon.svg" alt="">{{ 'filter' | translate }}</button>
+                <div class="overlay" *ngIf="showOverlay" (click)="toggleFilters()"></div>
+                
+                <div class="filter dark:bg-gray-700 dark:text-white" *ngIf="showFilters">
+                    <div class="select">
+                        <p>{{ 'priority' | translate }}:</p>
+                        <label for="high" class="checkbox-label">
+                            <input type="checkbox" [(ngModel)]="highChecked" id="high" name="high"><img src="../../../assets/icons/high_priority.svg" alt="">
+                        </label>
+                        <label for="medium" class="checkbox-label">
+                            <input type="checkbox" [(ngModel)]="mediumChecked" id="medium" name="medium"><img src="../../../assets/icons/medium_priority.svg" alt="">
+                        </label>
+                        <label for="low" class="checkbox-label">
+                            <input type="checkbox" [(ngModel)]="lowChecked" id="low" name="low"><img src="../../../assets/icons/low_priority.svg" alt="">
+                        </label>
+                    </div>
+        
+                    <div class="select">
+                        <p>{{ 'status' | translate }}:</p>
+                        <div class="select" *ngFor="let column of columns">
+                            
+                            <label for="{{ column.name }}" class="checkbox-label">
+                                <input type="checkbox" [checked]="column.visible" id="{{ column.name }}" name="{{ column.name }}" (change)="toggleColumnVisibility(column)">{{ column.name }}
+                            </label>
+                        </div>
+                    </div>
+        
+                </div>
+    
+            <button  *ngIf="( this.ProjectInfo?.status!='Dismissed') && isUserManagerOnSelectedProject==true" class="add-column-button dark:text-white xsm:text-xs" (click)="openAddTaskOverlay('In Progress')"><img  *ngIf="(role=='Manager' && this.ProjectInfo?.status!='Dismissed')"   src="../../../assets/icons/plusic.svg" alt="">{{ 'createNewTask' | translate }}</button>
+            <button  *ngIf="( this.ProjectInfo?.status=='Dismissed') && isUserManagerOnSelectedProject==true" class="add-column-button dark:text-white xsm:text-xs" style="color: black; cursor:not-allowed;"><img  *ngIf="(role=='Manager')"   src="../../../assets/icons/plusicGray.svg" alt="">{{ 'createNewTask' | translate }}</button>
+            <button  *ngIf="isUserManagerOnSelectedProject==true" class="add-column-button dark:text-white xsm:text-xs" (click)="showAddColumnPopup()"><img  *ngIf="(role=='Manager')"   src="../../../assets/icons/plusic.svg" alt="">{{ 'addNewColumn' | translate }}</button> 
+            </div>
+            
+    </div>
+     <!-- Project list for large screens -->
+     <div class="xl:block xsm:hidden lg:hidden row-start-1 row-end-3 w-max shadow-custom3 -mt-28 dark:bg-gray-700 dark:text-white w-max" style="margin-top: -10%;margin-left: 15%;">
+        <app-project-list></app-project-list>
+     </div>
+<!-- Dropdown for selecting project -->
+<div class="select-project flex flex-col xl:hidden dark:bg-gray-700 dark:text-white shadow-custom3 rounded-md  mt-2 lg:ml-12">
+    <select class="p-2 border-none outline-none shadow-custom3 rounded-md w-full dark:bg-gray-700 dark:text-white xsm:justify-center" [(ngModel)]="selectedProject" (change)="onProjectChange($event)">
+        <option value="0" selected hidden>{{'Select Project'|translate}}</option>
+        <option *ngFor="let project of projects" [value]="project.projectID">{{ project.projectName }}</option>
+    </select>
+</div>
+        <div class="kanban-board xl:ml-12 lg:ml-12">
+            
+            <div class="wrapper" *ngFor="let column of filteredColumns">
+                <div >
+                    <div class="column dark:bg-gray-700" draggable="true" (dragstart)="onColumnDragStart($event,column.name)" (click)="toggleDeleteButton(column)"  (dragover)="onDragOver($event)" (drop)="onDrop($event, column.name)" (dragover)="onColumnDragOver($event, column.name)" (drop)="onColumnDrop($event, column.name)">
+                        <h2 id="column" class="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold mb-2">{{ column.name }} ({{ filterTasksCount(column.name) }})</h2>
+                        <div class="holder">
+                            <div class="task dark:bg-gray-600 dark:text-white" *ngFor="let task of filterTasks(column.name)" draggable="true" (dragstart)="onDragStart(task)" (dragstart)="onTaskDragStart($event, task);$event.stopPropagation();" (dragover)="onTaskDragOver($event)" (drop)="onTaskDrop($event, task)" (dragend)="onTaskDragEnd($event)" (click)="onTaskClicked(task)">
+                                <h3>{{ task.assignmentName }}</h3>
+                                <p>{{ task.description }}</p>
+                                <div class="status-and-picture">
+                                    <div class="row-down">
+                                    <img [src]="getIconUrl(task)" alt="">
+                                    </div>
+                                        <span class="task-leader-picture" [attr.data-description]="task.assignmentLeadFirstName + ' ' + task.assignmentLeadLastName"><img class="cursor-pointer" src="../../../assets/profilepics/{{ task.assignmentLeadURL }}" alt="" (click)="imageRedirect(task.assignmentLeadID)">
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- <span  *ngIf="(role=='Manager')"  class="bottom"><button (click)="openAddTaskOverlay(column.name)">+ {{ 'addNewTask' | translate }}</button></span> -->
+                    </div>
+                    <svg *ngIf="column.showDeleteButton && isColumnEmpty(column.name)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6 delete-column-icon" (click)="deleteColumn(column.name)">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
+                    </svg>
+                </div>
+            </div>
+            
+            
+        </div>
+    </div>
+        <ng-container *ngIf="openOverlay">
+            <div class="overlay-background"></div>
+            <div class="overlay-content">
+                <app-add-task [allTasks]="this.tempAllTasks" [projectId]="projectId" [status]="tempColName" (closeOverlayEvent)="openAddTaskOverlay()"></app-add-task>
+            </div>
+        </ng-container>
+</div>
+</html>
