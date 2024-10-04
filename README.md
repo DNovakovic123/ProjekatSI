@@ -1,2 +1,2 @@
 # ProjekatSI
-Aplikacija za upraljanje projektima 
+Aplikacija za upravljanje projektima 
